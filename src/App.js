@@ -1,5 +1,5 @@
 import { Alchemy, Network } from 'alchemy-sdk';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import './App.css';
 
@@ -21,6 +21,25 @@ const alchemy = new Alchemy(settings);
 
 function App() {
   const [blockNumber, setBlockNumber] = useState();
+  const [loading, setLoading] = useState(false)
+  const [block, setBlock] = useState({});
+  // const getBlock = async (blockNumber) => {
+  //   // this function just returns the block with transaction hashes (no details)
+  //   setLoading(true)
+  //   const block = await alchemy.core.getBlock(blockNumber);
+  //   setBlock(block);
+  //   setLoading(false)
+  //   console.log("without details")
+  //   console.log(block);
+  // }
+  async function getTransactions(blockNumber) {
+    console.log('With transaction details')
+    setLoading(true);
+    setBlock(await alchemy.core.getBlockWithTransactions(blockNumber));
+    setLoading(false);
+    console.log(await alchemy.core.getBlockWithTransactions(blockNumber));
+    // this function returns block with the transaction and their details.
+  }
 
   useEffect(() => {
     async function getBlockNumber() {
@@ -28,9 +47,40 @@ function App() {
     }
 
     getBlockNumber();
-  });
+    // getBlock();
+    getTransactions();
+  }, []);
 
-  return <div className="App">Block Number: {blockNumber}</div>;
+  return <>
+    {loading ? (<h1 id='loading'>Loading....</h1>) : (
+      <>
+        <h1 id='heading'>Welcome to my Block Explorer!</h1>
+        <div className='container'>
+          <h1>Block# {blockNumber}</h1>
+          <p>{String(new Date(block.timestamp * 1000))}</p>
+          <p>Block Number: {blockNumber}</p>
+          <p>Block Hash: {block.hash}</p>
+          <p>Block Miner: {block.miner}</p>
+          <p>Nonce: {parseInt(block.nonce)}</p>
+          <p>Timestamp: {block.timestamp}</p>
+          <p>Difficulty: {block.difficulty}</p>
+        </div>
+        <div className='container'>
+          <h1>Transactions</h1>
+          {(JSON.stringify(block) === '{}') ? (<h1>Loading...</h1>) : (
+            block.transactions.map((transaction) => {
+              const { from, to, nonce, extraData } = transaction;
+              return <section id='transaction' key={extraData}>
+                <p>From: {from}</p>
+                <p>To: {to}</p>
+                <p>Nonce: {nonce}</p>
+              </section>
+            })
+          )}
+        </div>
+      </>
+    )}
+  </>;
 }
 
 export default App;
